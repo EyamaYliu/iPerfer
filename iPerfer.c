@@ -81,7 +81,7 @@ int main(int argc, char const *argv[])
 		//Keep reading for FIN sign
 		valread = read( new_socket , buffer, 1000);
 	        datasize +=1;
-		printf("%d kB received.\n",((datasize-1)/8));	
+		//printf("%d kB received.\n",((datasize-1)/8));	
 	    }
 	    //Stop time clock
 	    end = time(NULL);
