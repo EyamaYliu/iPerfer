@@ -37,6 +37,7 @@ int main(int argc, char const *argv[])
 	    int addrlen = sizeof(address);
 	    char buffer[1000] = {0};
 	    char FinishTest[10];
+	    char *acknowledgement = "RECEIVED";
 	    time_t start,end;
 	    double elapsed;
       
@@ -76,18 +77,21 @@ int main(int argc, char const *argv[])
 	
 	    //Time when receiving start   
 	    start = time(NULL);
-	    while(strcmp(buffer,"FIN") != 0)
+	     while(buffer[valread-1] == 0)
 	    {	
 		//Keep reading for FIN sign
 		valread = read( new_socket , buffer, 1000);
-	        datasize +=1;
-		//printf("%d kB received.\n",((datasize-1)/8));	
+	        datasize += valread;
+		//printf("%d kB received.\n",valread);	
 	    }
+	     //Send acknowledgement
+	    send(new_socket , acknowledgement , strlen(acknowledgement) , 0 );
+
 	    //Stop time clock
 	    end = time(NULL);
 	    elapsed = difftime(end,start);
 	
-	    float sizeofdata = (datasize-1)/8;
+	    float sizeofdata = (datasize-1)*8/1000;
 	    float rate = sizeofdata/(elapsed*1000);
 	    printf("\nServer Summary: \n     This transmission went for %g seconds.\n     There are total of %g KB sent.\n     Transmission rate is %g Mbps.\n ",elapsed,sizeofdata,rate);
  
@@ -110,15 +114,15 @@ int main(int argc, char const *argv[])
 
 	 	
 	    struct sockaddr_in address;
-	    int sock = 0, valread;
+	    int sock = 0, valread,valsent;
 	    struct sockaddr_in serv_addr;
 	    char *SendFinIndicator = "FIN";
 	    char buffer[1000] = {0};
 	    int ZeroArrayData[1000] = {0};
 	    int sizeofData = 1000;
 	    int terminate = 1;
-	    time_t start,end;
-	    double elapsed;
+	    time_t start,end,s2,e2;
+	    double elapsed,elapsed2;
 
 	    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	    {
@@ -149,21 +153,28 @@ int main(int argc, char const *argv[])
 	    int count = 0;
 	    while(terminate)
 	    {
-		end = time(NULL);
+	        end = time(NULL);
 		elapsed = difftime(end,start);
 	  	if (elapsed >= dataTiming) //seconds 
 			terminate = 0;
 		else
 		{
-		    	send(sock , ZeroArrayData , sizeofData , 0 );
-			count +=1;
+		    	valsent = send(sock , ZeroArrayData , sizeofData , 0 );
+			count += valsent;
 		}
             }
-	    float sizeofdata = count/8;
-	    float rate = sizeofdata/(dataTiming*1000);//in Megabyte per secound
+	    s2 = time(NULL);
+	    float sizeofdata = count*8/1000;
 	    //Sending Finish indicator
 	    send(sock , SendFinIndicator , strlen(SendFinIndicator) , 0 );
-	    printf("\nClient Summary: \n     This transmission went for %g seconds.\n     There are total of %g KB sent.\n     Transmission rate is %g Mbps.\n ",elapsed,sizeofdata,rate);
+
+	    //Reading Acknowledgement
+	    valread = read(sock, buffer,1000);
+	    e2 = time(NULL);
+	    elapsed2 = difftime(e2,s2);
+	    float rate = sizeofdata/((elapsed+elapsed2)*1000);//in Megabyte per secound
+
+	    printf("\nClient Summary: \n     This transmission went for %g seconds.\n     There are total of %g KB sent.\n     Transmission rate is %g Mbps.\n ",elapsed+elapsed2,sizeofdata,rate);
 	    return 0;
    	}//Wrong argument, exit
     else
